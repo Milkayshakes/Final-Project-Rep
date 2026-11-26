@@ -1,4 +1,53 @@
 import customtkinter as ctk
+import requests
+import os
+import shutil
+import uuid
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.staticfiles import StaticFiles
+
+app = FastAPI()
+
+UPLOAD_DIR = "static/uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+app.mount("/static", StaticFiles(directory= "static"), name="static")
+
+ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp"}
+
+@app.post("/posts")
+async def create_post(
+    caption: str = Form(...),
+    image: UploadFile = File(...)
+):
+    if image.content_type not in ALLOWED_TYPES:
+        raise HTTPException(status_code=400, detail="Invalid image format")
+    ext = os.path.splittext(image.filename[1])
+    unique_filename = f"{uuid.uuid4()}{ext}"
+    file_path = os.path.join(UPLOAD_DIR, unique_filename)
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(UPLOAD_DIR, unique_filename)
+
+    image_url = f"/static/uploads/{unique_filename}"
+    return{
+        "caption": caption,
+        "image_url": image_url,
+        "status": "published"
+    }
+    
+url = "https://www.instagram.com/?hl=en"
+print("Current working directory:", os.getcwd())
+print("Files in this folder:", os.listdir())
+with open("photo.jpg", "rb") as img_file:
+    files = {"image":("photo.jpg", img_file, "image/jpeg")}
+    data = {"caption": "Hello world!"}
+
+    response = requests.post(url, data=data, files=files)
+    print(response.json())
+
+
+
+
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("green")
